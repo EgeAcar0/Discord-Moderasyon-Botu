@@ -36,12 +36,22 @@ for (const file of commandFiles) {
 const ayarlar = require('./ayarlar.json');
 const warnsPath = path.join(__dirname, 'warns.json');
 
-function getWarns() {
-    if (!fs.existsSync(warnsPath)) return {};
-    return JSON.parse(fs.readFileSync(warnsPath, 'utf8'));
+// Async file operations
+async function getWarns() {
+    try {
+        await fs.promises.access(warnsPath);
+        const data = await fs.promises.readFile(warnsPath, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        return {};
+    }
 }
-function saveWarns(warns) {
-    fs.writeFileSync(warnsPath, JSON.stringify(warns, null, 4));
+async function saveWarns(warns) {
+    try {
+        await fs.promises.writeFile(warnsPath, JSON.stringify(warns, null, 4));
+    } catch (error) {
+        console.error('Warns kaydedilemedi:', error.message);
+    }
 }
 
 const profanityList = [
@@ -89,8 +99,58 @@ client.on("interactionCreate", async interaction => {
     try {
         await command.execute(interaction);
     } catch (error) {
-        console.error(error);
-        await interaction.reply({ content: '❌ Komut çalıştırılırken bir hata oluştu.', ephemeral: true });
+        // Detaylı error loglama
+        const errorInfo = {
+            command: interaction.commandName,
+            user: `${interaction.user.tag} (${interaction.user.id})`,
+            guild: `${interaction.guild.name} (${interaction.guild.id})`,
+            channel: `${interaction.channel.name} (${interaction.channel.id})`,
+            time: new Date().toISOString(),
+            error: error.message,
+            stack: error.stack
+        };
+        
+        // Console'a detaylı log
+        console.error('=== KOMUT HATASI ===');
+        console.error(JSON.stringify(errorInfo, null, 2));
+        console.error('===================');
+        
+        // Log kanalına bildir
+        try {
+            const ayarlar = require('./ayarlar.json');
+            const config = ayarlar[interaction.guildId] || {};
+            if (config.olayLogKanalId) {
+                const logChannel = interaction.guild.channels.cache.get(config.olayLogKanalId);
+                if (logChannel) {
+                    const logMessage = `🚨 **Komut Hatası**\n**Komut:** /${interaction.commandName}\n**Kullanıcı:** ${interaction.user.tag}\n**Hata:** ${error.message}\n**Zaman:** ${new Date().toLocaleString('tr-TR')}`;
+                    await logChannel.send({ content: logMessage });
+                }
+            }
+        } catch (logError) {
+            console.error('Log kanalına bildirim gönderilemedi:', logError.message);
+        }
+        
+        // User-friendly mesaj
+        const userMessages = {
+            'Missing Permissions': '❌ Bu komutu kullanmak için yetkiniz yok.',
+            'Unknown Guild': '❌ Sunucu bilgisi alınamadı.',
+            'Unknown Member': '❌ Kullanıcı bilgisi alınamadı.',
+            'Unknown Channel': '❌ Kanal bilgisi alınamadı.',
+            'Timeout': '❌ İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.',
+            'default': '❌ Komut çalıştırılırken bir hata oluştu. Lütfen daha sonra tekrar deneyin.'
+        };
+        
+        const errorMessage = userMessages[error.message] || userMessages['default'];
+        
+        try {
+            if (interaction.replied || interaction.deferred) {
+                await interaction.followUp({ content: errorMessage, ephemeral: true });
+            } else {
+                await interaction.reply({ content: errorMessage, ephemeral: true });
+            }
+        } catch (replyError) {
+            console.error('Kullanıcıya hata mesajı gönderilemedi:', replyError.message);
+        }
     }
 });
 
