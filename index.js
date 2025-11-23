@@ -56,9 +56,7 @@ async function saveWarns(warns) {
     }
 }
 
-const profanityList = [
-    'amk', 'aq', 'orospu', 'sik', 'piç', 'yarrak', 'ananı', 'anan', 'amına', 'göt', 'mal', 'salak', 'gerizekalı', 'sikik', 'amcık', 'pezevenk', 'kahpe', 'ibne', 'döl', 'sürtük', 'oç', 'mk', 'sg', 'siktir', 'sikerim', 'amk', 'amq', 'amına koyim', 'amına koyayım', 'amk', 'amq', 'amına koyayım', 'amına koyim'
-];
+const profanityList = require('./config/profanity.json').words;
 
 // Davet log sistemi
 const invitesCache = new Map();
