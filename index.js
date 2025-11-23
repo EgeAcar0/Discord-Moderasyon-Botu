@@ -39,7 +39,9 @@ for (const file of commandFiles) {
 const ayarlar = require('./ayarlar.json');
 const { addWarn, getWarnCount, getKayit } = require('./utils/database');
 
-const profanityList = require('./config/profanity.json').words;
+const profanityList = [
+    'amk', 'aq', 'orospu', 'sik', 'piç', 'yarrak', 'ananı', 'anan', 'amına', 'göt', 'mal', 'salak', 'gerizekalı', 'sikik', 'amcık', 'pezevenk', 'kahpe', 'ibne', 'döl', 'sürtük', 'oç', 'mk', 'sg', 'siktir', 'sikerim', 'amk', 'amq', 'amına koyim', 'amına koyayım', 'amk', 'amq', 'amına koyayım', 'amına koyim'
+];
 
 // Davet log sistemi
 const invitesCache = new Map();
@@ -275,7 +277,6 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
     }
 });
 // Sunucuya giriş/çıkış
-const { getKayit } = require('./utils/database');
 client.on('guildMemberAdd', async member => {
     // Olay log (mevcut)
     sendEventLog(member.guild, `✅ ${member.user.tag} joined the server.`);
