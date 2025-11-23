@@ -4,6 +4,7 @@ const path = require("path");
 const { Client, Collection, GatewayIntentBits } = require("discord.js");
 const { validateUserId, validateRoleId, validateChannelId, validateReason, sanitizeInput } = require('./utils/validation');
 const { checkRateLimit } = require('./utils/rateLimit');
+const { initDatabase } = require('./utils/database');
 
 const client = new Client({
     intents: [
@@ -36,33 +37,25 @@ for (const file of commandFiles) {
 }
 
 const ayarlar = require('./ayarlar.json');
-const warnsPath = path.join(__dirname, 'warns.json');
-
-// Async file operations
-async function getWarns() {
-    try {
-        await fs.promises.access(warnsPath);
-        const data = await fs.promises.readFile(warnsPath, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        return {};
-    }
-}
-async function saveWarns(warns) {
-    try {
-        await fs.promises.writeFile(warnsPath, JSON.stringify(warns, null, 4));
-    } catch (error) {
-        console.error('Warns kaydedilemedi:', error.message);
-    }
-}
+const { addWarn, getWarnCount, getKayit } = require('./utils/database');
 
 const profanityList = require('./config/profanity.json').words;
 
 // Davet log sistemi
 const invitesCache = new Map();
 
-client.once("ready", () => {
+client.once("ready", async () => {
     console.log(`✅ Bot çalışıyor: ${client.user.tag}`);
+    
+    // Initialize database
+    try {
+        await initDatabase();
+        console.log('✅ Database initialized successfully');
+    } catch (error) {
+        console.error('❌ Database initialization failed:', error);
+    }
+    
+    // Fetch invites
     (async () => {
         for (const [guildId, guild] of client.guilds.cache) {
             const invites = await guild.invites.fetch().catch(() => null);
@@ -183,27 +176,24 @@ client.on('messageCreate', async message => {
     const lower = message.content.toLowerCase();
     if (profanityList.some(word => lower.includes(word))) {
         await message.delete().catch(() => {});
-        // Warn escalation
-        const warns = await getWarns();
+        // Warn escalation with database
         const userId = message.author.id;
-        warns[guildId] = warns[guildId] || {};
-        warns[guildId][userId] = warns[guildId][userId] || [];
-        const warnData = {
-            moderator: 'AutoMod',
-            moderatorId: client.user.id,
-            date: new Date().toISOString(),
-            reason: 'Küfür/Profanity'
-        };
-        warns[guildId][userId].push(warnData);
-        await saveWarns(warns);
+        const warnCount = await getWarnCount(guildId, userId);
+        
+        // Add warn to database
+        try {
+            await addWarn(guildId, userId, client.user.id, 'AutoMod', 'Küfür/Profanity');
+        } catch (error) {
+            console.error('Warn eklenemedi:', error.message);
+        }
         // Uyarı rolleri
-        const warnCount = warns[guildId][userId].length;
+        const newWarnCount = await getWarnCount(guildId, userId);
         const rolesToAssign = [config.uyariRol1Id, config.uyariRol2Id, config.uyariRol3Id];
         for (let i = 0; i < rolesToAssign.length; i++) {
             if (rolesToAssign[i]) {
                 const member = await message.guild.members.fetch(userId).catch(() => null);
                 if (member) {
-                    if (warnCount === i + 1) {
+                    if (newWarnCount === i + 1) {
                         await member.roles.add(rolesToAssign[i]).catch(() => {});
                         try { await message.author.send(`⚠️ Uyarı ${i+1}: Küfür tespit edildi. Lütfen dikkatli olun.`); } catch {}
                     }
@@ -220,7 +210,7 @@ client.on('messageCreate', async message => {
         if (config.olayLogKanalId) {
             const logChannel = message.guild.channels.cache.get(config.olayLogKanalId);
             if (logChannel) {
-                logChannel.send({ content: `🚨 ${message.author.tag} (${message.author.id}) küfür tespit edildi ve mesajı silindi. Toplam uyarı: ${warnCount}` });
+                logChannel.send({ content: `🚨 ${message.author.tag} (${message.author.id}) küfür tespit edildi ve mesajı silindi. Toplam uyarı: ${newWarnCount}` });
             }
         }
     }
@@ -285,17 +275,7 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
     }
 });
 // Sunucuya giriş/çıkış
-const kayitPath = path.join(__dirname, 'kayıt.json');
-async function getKayitAyar(guildId) {
-    try {
-        await fs.promises.access(kayitPath);
-        const data = await fs.promises.readFile(kayitPath, 'utf8');
-        const parsed = JSON.parse(data);
-        return parsed[guildId] || {};
-    } catch (error) {
-        return {};
-    }
-}
+const { getKayit } = require('./utils/database');
 client.on('guildMemberAdd', async member => {
     // Olay log (mevcut)
     sendEventLog(member.guild, `✅ ${member.user.tag} joined the server.`);
@@ -322,9 +302,9 @@ client.on('guildMemberAdd', async member => {
         }
     }
     // Kayıtsız rolü ver
-    const kayitAyar = await getKayitAyar(member.guild.id);
-    if (kayitAyar && kayitAyar.girisrol) {
-        const role = member.guild.roles.cache.get(kayitAyar.girisrol);
+    const kayitAyar = await getKayit(member.guild.id);
+    if (kayitAyar && kayitAyar.giris_rol_id) {
+        const role = member.guild.roles.cache.get(kayitAyar.giris_rol_id);
         if (role) {
             await member.roles.add(role).catch(() => {});
         }

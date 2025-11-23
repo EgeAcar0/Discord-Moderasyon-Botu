@@ -86,3 +86,8 @@ config.json.example
 kayitlog.json.example
 notes.json.example
 memory-bank/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
