@@ -1,16 +1,6 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { isAuthorized } = require(process.cwd() + '/utils/permissions');
-const fs = require('fs');
-const path = require('path');
-const warnsPath = path.join(__dirname, '../../warns.json');
-
-function getWarns() {
-    if (!fs.existsSync(warnsPath)) return {};
-    return JSON.parse(fs.readFileSync(warnsPath, 'utf8'));
-}
-function saveWarns(warns) {
-    fs.writeFileSync(warnsPath, JSON.stringify(warns, null, 4));
-}
+const { getWarns, removeWarn, getWarnCount } = require(process.cwd() + '/utils/database');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -25,16 +15,24 @@ module.exports = {
             return interaction.reply({ content: '❌ You do not have permission to use this command.', ephemeral: true });
         }
         const user = interaction.options.getUser('user');
-        const warns = getWarns();
         const guildId = interaction.guild.id;
         const userId = user.id;
-        warns[guildId] = warns[guildId] || {};
-        warns[guildId][userId] = warns[guildId][userId] || [];
-        if (warns[guildId][userId].length === 0) {
+        
+        // Get user's warnings from database
+        const warns = await getWarns(guildId, userId);
+        
+        if (warns.length === 0) {
             return interaction.reply({ content: `❌ ${user.tag} has no warnings.`, ephemeral: true });
         }
-        const removed = warns[guildId][userId].pop();
-        saveWarns(warns);
-        await interaction.reply({ content: `✅ Last warning removed from ${user.tag}.`, ephemeral: true });
+        
+        // Remove the last warning
+        const lastWarn = warns[warns.length - 1];
+        try {
+            await removeWarn(guildId, userId, lastWarn.id);
+            await interaction.reply({ content: `✅ Last warning removed from ${user.tag}.`, ephemeral: true });
+        } catch (error) {
+            console.error('Warn removal error:', error);
+            await interaction.reply({ content: `❌ Failed to remove warning from ${user.tag}.`, ephemeral: true });
+        }
     },
-}; 
+};

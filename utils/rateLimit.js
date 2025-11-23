@@ -12,7 +12,7 @@ function checkRateLimit(userId, commandName, limit = 5, windowMs = 60000) {
             count: 1,
             resetTime: now + windowMs
         });
-        return { allowed: true, remaining: limit - 1 };
+        return { allowed: true, remaining: limit - 1, timeRemaining: windowMs };
     }
     
     if (now > userLimit.resetTime) {
@@ -20,13 +20,15 @@ function checkRateLimit(userId, commandName, limit = 5, windowMs = 60000) {
             count: 1,
             resetTime: now + windowMs
         });
-        return { allowed: true, remaining: limit - 1 };
+        return { allowed: true, remaining: limit - 1, timeRemaining: windowMs };
     }
     
     if (userLimit.count >= limit) {
+        const timeRemaining = Math.max(0, userLimit.resetTime - now);
         return { 
             allowed: false, 
             remaining: 0,
+            timeRemaining: timeRemaining,
             resetTime: userLimit.resetTime
         };
     }
@@ -35,6 +37,7 @@ function checkRateLimit(userId, commandName, limit = 5, windowMs = 60000) {
     return { 
         allowed: true, 
         remaining: limit - userLimit.count,
+        timeRemaining: Math.max(0, userLimit.resetTime - now),
         resetTime: userLimit.resetTime
     };
 }

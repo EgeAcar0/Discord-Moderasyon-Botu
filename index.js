@@ -178,6 +178,14 @@ client.on('messageCreate', async message => {
     const lower = message.content.toLowerCase();
     if (profanityList.some(word => lower.includes(word))) {
         await message.delete().catch(() => {});
+        
+        // Kanala uyarı mesajı
+        try {
+            await message.channel.send(`⚠️ ${message.author}, küfür kullanmak yasaktır! Uyarı aldın.`);
+        } catch (error) {
+            console.error('Kanal uyarısı gönderilemedi:', error.message);
+        }
+        
         // Warn escalation with database
         const userId = message.author.id;
         const warnCount = await getWarnCount(guildId, userId);
@@ -188,24 +196,33 @@ client.on('messageCreate', async message => {
         } catch (error) {
             console.error('Warn eklenemedi:', error.message);
         }
-        // Uyarı rolleri
+        
+        // Uyarı rolleri sistemi
         const newWarnCount = await getWarnCount(guildId, userId);
-        const rolesToAssign = [config.uyariRol1Id, config.uyariRol2Id, config.uyariRol3Id];
-        for (let i = 0; i < rolesToAssign.length; i++) {
-            if (rolesToAssign[i]) {
-                const member = await message.guild.members.fetch(userId).catch(() => null);
-                if (member) {
-                    if (newWarnCount === i + 1) {
-                        await member.roles.add(rolesToAssign[i]).catch(() => {});
-                        try { await message.author.send(`⚠️ Uyarı ${i+1}: Küfür tespit edildi. Lütfen dikkatli olun.`); } catch {}
-                    }
-                    // Önceki uyarı rollerini kaldır
-                    for (let j = 0; j < rolesToAssign.length; j++) {
-                        if (j !== i && rolesToAssign[j] && member.roles.cache.has(rolesToAssign[j])) {
-                            await member.roles.remove(rolesToAssign[j]).catch(() => {});
-                        }
-                    }
+        const member = await message.guild.members.fetch(userId).catch(() => null);
+        
+        if (member) {
+            // Önceki tüm uyarı rollerini kaldır
+            const warnRoles = [config.uyariRol1Id, config.uyariRol2Id, config.uyariRol3Id];
+            for (const roleId of warnRoles) {
+                if (roleId && member.roles.cache.has(roleId)) {
+                    await member.roles.remove(roleId).catch(() => {});
                 }
+            }
+            
+            // Yeni uyarı seviyesine göre rol ver
+            if (newWarnCount === 1 && config.uyariRol1Id) {
+                await member.roles.add(config.uyariRol1Id).catch(() => {});
+                try { await message.author.send(`⚠️ **1. Uyarı**: Küfür tespit edildi. Lütfen dikkatli olun.`); } catch {}
+            } else if (newWarnCount === 2 && config.uyariRol2Id) {
+                await member.roles.add(config.uyariRol2Id).catch(() => {});
+                try { await message.author.send(`⚠️ **2. Uyarı**: Küfür tespit edildi. Bu son uyarı!`); } catch {}
+            } else if (newWarnCount === 3 && config.uyariRol3Id) {
+                await member.roles.add(config.uyariRol3Id).catch(() => {});
+                try { await message.author.send(`⚠️ **3. Uyarı**: Küfür tespit edildi. Bir dahakinde susturulacaksın!`); } catch {}
+            } else if (newWarnCount >= 4 && config.susturulmusRolId) {
+                await member.roles.add(config.susturulmusRolId).catch(() => {});
+                try { await message.author.send(`🔇 **Susturuldun (${newWarnCount}. ihlal)**: Küfür tespit edildi. Lütfen kurallara uyun! Kurallarımıza uymazsan daha ağır cezalarla karşılaşabilirsin.`); } catch {}
             }
         }
         // Log to event log channel

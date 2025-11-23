@@ -104,6 +104,15 @@ async function getWarnCount(guildId, userId) {
     });
 }
 
+async function getAllWarns(guildId) {
+    return new Promise((resolve, reject) => {
+        db.all('SELECT * FROM warns WHERE guild_id = ? ORDER BY created_at DESC', [guildId], (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+}
+
 // Kayit functions
 async function setKayit(guildId, girisRolId) {
     return new Promise((resolve, reject) => {
@@ -174,6 +183,7 @@ module.exports = {
     initDatabase,
     addWarn,
     getWarns,
+    getAllWarns,
     removeWarn,
     getWarnCount,
     setKayit,
