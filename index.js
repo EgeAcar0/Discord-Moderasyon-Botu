@@ -2,6 +2,8 @@ require("dotenv").config();
 const fs = require("fs");
 const path = require("path");
 const { Client, Collection, GatewayIntentBits } = require("discord.js");
+const { validateUserId, validateRoleId, validateChannelId, validateReason, sanitizeInput } = require('./utils/validation');
+const { checkRateLimit } = require('./utils/rateLimit');
 
 const client = new Client({
     intents: [
@@ -82,6 +84,17 @@ client.on('inviteDelete', async invite => {
 client.on("interactionCreate", async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
+    // Rate limiting kontrolü
+    const rateLimit = checkRateLimit(interaction.user.id, interaction.commandName, 5, 60000);
+    if (!rateLimit.allowed) {
+        const timeRemaining = Math.ceil(rateLimit.timeRemaining / 1000);
+        await interaction.reply({ 
+            content: `⏱️ Bu komutu çok sık kullanıyorsunuz. ${timeRemaining} saniye bekleyin.`, 
+            ephemeral: true 
+        });
+        return;
+    }
+
     // Komut kullanımını logla
     try {
         const ayarlar = require('./ayarlar.json');
@@ -158,11 +171,22 @@ client.on('messageCreate', async message => {
     if (message.author.bot || !message.guild) return;
     const guildId = message.guild.id;
     const config = ayarlar[guildId] || {};
+    
+    // Rate limiting kontrolü (mesaj için)
+    const rateLimit = checkRateLimit(message.author.id, 'message', 10, 60000);
+    if (!rateLimit.allowed) {
+        await message.delete().catch(() => {});
+        try {
+            await message.author.send('⏱️ Çok fazla mesaj atıyorsunuz. Lütfen yavaşlayın.');
+        } catch {}
+        return;
+    }
+    
     const lower = message.content.toLowerCase();
     if (profanityList.some(word => lower.includes(word))) {
         await message.delete().catch(() => {});
         // Warn escalation
-        const warns = getWarns();
+        const warns = await getWarns();
         const userId = message.author.id;
         warns[guildId] = warns[guildId] || {};
         warns[guildId][userId] = warns[guildId][userId] || [];
@@ -173,7 +197,7 @@ client.on('messageCreate', async message => {
             reason: 'Küfür/Profanity'
         };
         warns[guildId][userId].push(warnData);
-        saveWarns(warns);
+        await saveWarns(warns);
         // Uyarı rolleri
         const warnCount = warns[guildId][userId].length;
         const rolesToAssign = [config.uyariRol1Id, config.uyariRol2Id, config.uyariRol3Id];
@@ -264,10 +288,15 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
 });
 // Sunucuya giriş/çıkış
 const kayitPath = path.join(__dirname, 'kayıt.json');
-function getKayitAyar(guildId) {
-    if (!fs.existsSync(kayitPath)) return {};
-    const data = JSON.parse(fs.readFileSync(kayitPath, 'utf8'));
-    return data[guildId] || {};
+async function getKayitAyar(guildId) {
+    try {
+        await fs.promises.access(kayitPath);
+        const data = await fs.promises.readFile(kayitPath, 'utf8');
+        const parsed = JSON.parse(data);
+        return parsed[guildId] || {};
+    } catch (error) {
+        return {};
+    }
 }
 client.on('guildMemberAdd', async member => {
     // Olay log (mevcut)
@@ -295,7 +324,7 @@ client.on('guildMemberAdd', async member => {
         }
     }
     // Kayıtsız rolü ver
-    const kayitAyar = getKayitAyar(member.guild.id);
+    const kayitAyar = await getKayitAyar(member.guild.id);
     if (kayitAyar && kayitAyar.girisrol) {
         const role = member.guild.roles.cache.get(kayitAyar.girisrol);
         if (role) {
