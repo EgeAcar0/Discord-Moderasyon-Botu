@@ -5,6 +5,7 @@ const { Client, Collection, GatewayIntentBits } = require("discord.js");
 const { validateUserId, validateRoleId, validateChannelId, validateReason, sanitizeInput } = require('./utils/validation');
 const { checkRateLimit } = require('./utils/rateLimit');
 const { initDatabase } = require('./utils/database');
+const { checkAntiSpam } = require('./utils/antiSpam');
 
 const client = new Client({
     intents: [
@@ -40,7 +41,7 @@ const ayarlar = require('./ayarlar.json');
 const { addWarn, getWarnCount, getKayit } = require('./utils/database');
 
 const profanityList = [
-    'amk', 'aq', 'orospu', 'sik', 'piç', 'yarrak', 'ananı', 'anan', 'amına', 'göt', 'mal', 'salak', 'gerizekalı', 'sikik', 'amcık', 'pezevenk', 'kahpe', 'ibne', 'döl', 'sürtük', 'oç', 'mk', 'sg', 'siktir', 'sikerim', 'amk', 'amq', 'amına koyim', 'amına koyayım', 'amk', 'amq', 'amına koyayım', 'amına koyim'
+    'amk', 'aq', 'orospu', 'sik', 'piç', 'yarrak', 'ananı', 'anan', 'amına', 'göt', 'mal', 'salak', 'gerizekalı', 'sikik', 'amcık', 'pezevenk', 'kahpe', 'ibne', 'döl', 'sürtük', 'oç', 'mk', 'sg', 'siktir', 'sikerim', 'amk', 'amq', 'amına koyim', 'amına koyayım', 'amk', 'amq', 'amına koyayım', 'amına koyim', 'ameka'
 ];
 
 // Davet log sistemi
@@ -160,18 +161,59 @@ client.on("interactionCreate", async interaction => {
     }
 });
 
-client.on('messageCreate', async message => {
-    if (message.author.bot || !message.guild) return;
+client.on("messageCreate", async message => {
+    if (message.author.bot) return;
+    
     const guildId = message.guild.id;
     const config = ayarlar[guildId] || {};
     
-    // Rate limiting kontrolü (mesaj için)
-    const rateLimit = checkRateLimit(message.author.id, 'message', 10, 60000);
+    // Check if user has mute role
+    if (config.susturulmusRolId && message.member.roles.cache.has(config.susturulmusRolId)) {
+        await message.delete().catch(() => {});
+        
+        // Send DM to user (like warnings.js ephemeral)
+        try {
+            await message.author.send(`🔇 Susturuldun! Mesaj gönderemezsin.`);
+        } catch (error) {
+            console.error('Mute DM gönderilemedi:', error.message);
+        }
+        return;
+    }
+    
+    // Rate limiting for messages
+    const rateLimit = checkRateLimit(message.author.id, "message", 10, 60000);
     if (!rateLimit.allowed) {
         await message.delete().catch(() => {});
         try {
             await message.author.send('⏱️ Çok fazla mesaj atıyorsunuz. Lütfen yavaşlayın.');
         } catch {}
+        return;
+    }
+    
+    // Anti-spam and content filtering
+    const antiSpamResult = await checkAntiSpam(message, config);
+    if (!antiSpamResult.allowed) {
+        // Handle different actions
+        if (antiSpamResult.action === 'delete') {
+            await message.delete().catch(() => {});
+        }
+        
+        // Send warning message
+        try {
+            await message.channel.send(`${message.author}, ${antiSpamResult.message}`);
+        } catch (error) {
+            console.error('Anti-spam warning failed:', error.message);
+        }
+        
+        // Log to event log channel
+        if (config.olayLogKanalId) {
+            const logChannel = message.guild.channels.cache.get(config.olayLogKanalId);
+            if (logChannel) {
+                logChannel.send({ 
+                    content: `🚨 ${message.author.tag} (${message.author.id}) ${antiSpamResult.reason} tespit edildi. Mesaj: "${message.content.substring(0, 50)}..."` 
+                });
+            }
+        }
         return;
     }
     
