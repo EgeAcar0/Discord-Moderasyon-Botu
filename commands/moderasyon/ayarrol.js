@@ -38,6 +38,10 @@ module.exports = {
             option.setName('botrol')
             .setDescription('Bot rolü')
             .setRequired(false))
+        .addRoleOption(option =>
+            option.setName('ilkrol')
+            .setDescription('Sunucuya yeni katılanlara verilecek rol')
+            .setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
     async execute(interaction) {
@@ -51,7 +55,8 @@ module.exports = {
         const uyariRol1 = interaction.options.getRole('uyarirol1');
         const uyariRol2 = interaction.options.getRole('uyarirol2');
         const uyariRol3 = interaction.options.getRole('uyarirol3');
-        const botrol = interaction.options.getRole('botrol')
+        const botrol = interaction.options.getRole('botrol');
+        const ilkrol = interaction.options.getRole('ilkrol');
 
         ayarlar[guildId].yetkiliRolIds = [];
         if(yetkili1) ayarlar[guildId].yetkiliRolIds.push(yetkili1.id);
@@ -62,6 +67,7 @@ module.exports = {
         if(uyariRol2) ayarlar[guildId].uyariRol2Id = uyariRol2.id;
         if(uyariRol3) ayarlar[guildId].uyariRol3Id = uyariRol3.id;
         if(botrol) ayarlar[guildId].botrolId = botrol.id;
+        if(ilkrol) ayarlar[guildId].ilkRolId = ilkrol.id;
 
         fs.writeFileSync('./ayarlar.json', JSON.stringify(ayarlar, null, 4));
 

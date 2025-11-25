@@ -339,6 +339,7 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
 client.on('guildMemberAdd', async member => {
     // Olay log (mevcut)
     sendEventLog(member.guild, `✅ ${member.user.tag} joined the server.`);
+    
     // Davet log (mevcut)
     const config = ayarlar[member.guild.id] || {};
     if (config.davetLogKanalId) {
@@ -346,11 +347,12 @@ client.on('guildMemberAdd', async member => {
         const newInvites = await member.guild.invites.fetch().catch(() => null);
         if (newInvites) invitesCache.set(member.guild.id, newInvites);
         let usedInvite = null;
-        if (newInvites && prevInvites) {
-            usedInvite = newInvites.find(i => {
-                const prev = prevInvites.get(i.code);
-                return prev && i.uses > prev.uses;
-            });
+        for (const [code, invite] of newInvites) {
+            const prevInvite = prevInvites.get(code);
+            if (!prevInvite || invite.uses > prevInvite.uses) {
+                usedInvite = invite;
+                break;
+            }
         }
         const logChannel = member.guild.channels.cache.get(config.davetLogKanalId);
         if (logChannel) {
@@ -361,7 +363,18 @@ client.on('guildMemberAdd', async member => {
             }
         }
     }
-    // Kayıtsız rolü ver
+    
+    // Otomatik rol sistemi (yeni)
+    if (config.ilkRolId) {
+        const role = member.guild.roles.cache.get(config.ilkRolId);
+        if (role) {
+            await member.roles.add(role).catch(() => {});
+        } else {
+            console.log(`⚠️ ilkRolId bulunamadı: ${config.ilkRolId}`);
+        }
+    }
+    
+    // Kayıtsız rolü ver (mevcut)
     const kayitAyar = await getKayit(member.guild.id);
     if (kayitAyar && kayitAyar.giris_rol_id) {
         const role = member.guild.roles.cache.get(kayitAyar.giris_rol_id);

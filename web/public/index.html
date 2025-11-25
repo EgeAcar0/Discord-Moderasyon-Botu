@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baygara Moderasyon Dashboard</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-online {
+            background: #4CAF50;
+        }
+
+        .status-offline {
+            background: #f44336;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .stat-description {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .recent-warnings {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .recent-warnings h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .warning-item {
+            background: rgba(102, 126, 234, 0.1);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .warning-item:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+
+        .warning-user {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .warning-reason {
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .warning-time {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid #f44336;
+            color: #f44336;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .refresh-btn:hover {
+            background: #5a67d8;
+        }
+
+        .refresh-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Baygara Moderasyon Dashboard</h1>
+            <p><span class="status-indicator status-offline" id="connectionStatus"></span>Bot Status: <span id="statusText">Connecting...</span></p>
+        </div>
+
+        <div id="errorContainer"></div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>📊 Toplam Uyarılar</h3>
+                <div class="stat-value" id="totalWarns">-</div>
+                <div class="stat-description">Tüm zamanlardaki toplam uyarı sayısı</div>
+            </div>
+
+            <div class="stat-card">
+                <h3>👥 Uyarılan Kullanıcılar</h3>
+                <div class="stat-value" id="totalUsers">-</div>
+                <div class="stat-description">Uyarı almış toplam kullanıcı sayısı</div>
+            </div>
+
+            <div class="stat-card">
+                <h3>⏱️ Bot Çalışma Süresi</h3>
+                <div class="stat-value" id="uptime">-</div>
+                <div class="stat-description">Botun ne kadar süredir aktif olduğu</div>
+            </div>
+
+            <div class="stat-card">
+                <h3>💾 Bellek Kullanımı</h3>
+                <div class="stat-value" id="memoryUsage">-</div>
+                <div class="stat-description">Botun mevcut bellek kullanımı</div>
+            </div>
+        </div>
+
+        <div class="recent-warnings">
+            <h2>⚠️ Son Uyarılar</h2>
+            <button class="refresh-btn" onclick="refreshData()">🔄 Verileri Yenile</button>
+            <div id="recentWarnings">
+                <div class="loading">Yükleniyor...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let isConnected = false;
+
+        // Connection status
+        socket.on('connect', () => {
+            isConnected = true;
+            updateConnectionStatus(true);
+            console.log('✅ Dashboard connected to server');
+            refreshData();
+        });
+
+        socket.on('disconnect', () => {
+            isConnected = false;
+            updateConnectionStatus(false);
+            console.log('❌ Dashboard disconnected from server');
+        });
+
+        socket.on('connected', (data) => {
+            console.log('🔌 Server message:', data.message);
+        });
+
+        // Real-time stats updates
+        socket.on('statsUpdate', (data) => {
+            updateStats(data);
+        });
+
+        socket.on('statsError', (error) => {
+            showError('İstatistikler yüklenemedi: ' + error.error);
+        });
+
+        function updateConnectionStatus(connected) {
+            const statusIndicator = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('statusText');
+            
+            if (connected) {
+                statusIndicator.className = 'status-indicator status-online';
+                statusText.textContent = 'Connected';
+            } else {
+                statusIndicator.className = 'status-indicator status-offline';
+                statusText.textContent = 'Disconnected';
+            }
+        }
+
+        function updateStats(data) {
+            document.getElementById('totalWarns').textContent = data.totalWarns || '0';
+            document.getElementById('uptime').textContent = formatUptime(data.uptime || 0);
+            document.getElementById('memoryUsage').textContent = formatMemory(data.memory || {});
+        }
+
+        function formatUptime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            return `${hours}h ${minutes}m`;
+        }
+
+        function formatMemory(memory) {
+            const mb = Math.round(memory.heapUsed / 1024 / 1024);
+            return `${mb} MB`;
+        }
+
+        function showError(message) {
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.innerHTML = `<div class="error">❌ ${message}</div>`;
+            setTimeout(() => {
+                errorContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        async function refreshData() {
+            if (!isConnected) {
+                showError('Sunucuya bağlanılamıyor');
+                return;
+            }
+
+            const refreshBtn = document.querySelector('.refresh-btn');
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = '⏳ Yükleniyor...';
+
+            try {
+                // Fetch initial stats
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateStats(data);
+                    document.getElementById('totalUsers').textContent = data.totalUsers || '0';
+                    
+                    // Update recent warnings
+                    updateRecentWarnings(data.recentWarns || []);
+                    
+                    // Request real-time updates
+                    socket.emit('requestStats');
+                } else {
+                    showError('Veriler yüklenemedi: ' + data.error);
+                }
+            } catch (error) {
+                showError('Sunucu hatası: ' + error.message);
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = '🔄 Verileri Yenile';
+            }
+        }
+
+        function updateRecentWarnings(warnings) {
+            const container = document.getElementById('recentWarnings');
+            
+            if (warnings.length === 0) {
+                container.innerHTML = '<div class="loading">Henüz uyarı bulunmuyor.</div>';
+                return;
+            }
+
+            const warningsHTML = warnings.map(warning => `
+                <div class="warning-item">
+                    <div class="warning-user">👤 Kullanıcı ID: ${warning.user_id}</div>
+                    <div class="warning-reason">📝 Sebep: ${warning.reason}</div>
+                    <div class="warning-time">🕐 Tarih: ${new Date(warning.created_at).toLocaleString('tr-TR')}</div>
+                    <div class="warning-time">👨‍💼 Moderatör: ${warning.moderator_name}</div>
+                </div>
+            `).join('');
+
+            container.innerHTML = warningsHTML;
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            if (isConnected) {
+                socket.emit('requestStats');
+            }
+        }, 30000);
+
+        // Initial connection status
+        updateConnectionStatus(false);
+    </script>
+</body>
+</html>

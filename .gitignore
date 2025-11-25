@@ -79,15 +79,18 @@ jspm_packages/
 ayarlar.json
 warns.json
 kayıt.json
+memory-bank/
 kayitlog.json
 notes.json
 ayarlar.json.example
 config.json.example
 kayitlog.json.example
 notes.json.example
-memory-bank/
 
 # Database
 *.db
 *.sqlite
 *.sqlite3
+
+# Environment variables for dashboard
+DASHBOARD_PORT=3001
