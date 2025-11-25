@@ -1,0 +1,126 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Bot ayarları tablosu
+model Ayarlar {
+  id                String   @id @default(cuid())
+  guildId           String   @unique
+  susturulmusRolId  String?
+  uyariRol1Id       String?
+  uyariRol2Id       String?
+  uyariRol3Id       String?
+  olayLogKanalId    String?
+  davetLogKanalId   String?
+  ilkRolId          String?
+  yetkiliRol1Id     String?
+  yetkiliRol2Id     String?
+  yetkiliRol3Id     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  warns             Warn[]
+  kayit             Kayit?
+  notes             Note[]
+  kayitLogs         KayitLog[]
+  botLogs           BotLog[]
+}
+
+// Kullanıcı uyarıları
+model Warn {
+  id             String   @id @default(cuid())
+  guildId        String
+  userId         String
+  moderatorId    String
+  moderatorName  String
+  reason         String
+  createdAt      DateTime @default(now())
+  
+  // Relations
+  ayarlar        Ayarlar @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+  
+  @@index([guildId, userId])
+  @@index([createdAt])
+}
+
+// Kayıt ayarları
+model Kayit {
+  id          String   @id @default(cuid())
+  guildId     String   @unique
+  girisRolId  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  ayarlar      Ayarlar @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+}
+
+// Kullanıcı notları
+model Note {
+  id             String   @id @default(cuid())
+  guildId        String
+  userId         String
+  moderatorId    String
+  moderatorName  String
+  note           String
+  createdAt      DateTime @default(now())
+  
+  // Relations
+  ayarlar        Ayarlar @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+  
+  @@index([guildId, userId])
+  @@index([createdAt])
+}
+
+// Kayıt logları
+model KayitLog {
+  id             String   @id @default(cuid())
+  guildId        String
+  userId         String
+  userName       String
+  moderatorId    String
+  moderatorName  String
+  action         String
+  oldName        String?
+  newName        String?
+  createdAt      DateTime @default(now())
+  
+  // Relations
+  ayarlar        Ayarlar @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+  
+  @@index([guildId, userId])
+  @@index([createdAt])
+}
+
+// Bot logları (tüm olaylar için)
+model BotLog {
+  id          String   @id @default(cuid())
+  guildId     String
+  event       String   // "command", "message", "join", "leave", "warn", "ban", etc.
+  userId      String?  // Etkileyen kullanıcı
+  targetId    String?  // Hedef kullanıcı
+  description String   // Olay açıklaması
+  metadata    Json?    // Ek veriler (JSON)
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  ayarlar     Ayarlar @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+  
+  @@index([guildId, event])
+  @@index([userId])
+  @@index([targetId])
+  @@index([createdAt])
+}

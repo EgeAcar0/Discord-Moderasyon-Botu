@@ -40,8 +40,71 @@ for (const file of commandFiles) {
 const ayarlar = require('./ayarlar.json');
 const { addWarn, getWarnCount, getKayit } = require('./utils/database');
 
+function normalize(text) {
+    return text
+        .normalize("NFKD")                       // Unicode normalize
+        .replace(/[\u0300-\u036f]/g, '')        // Accent temizleme
+        .replace(/[^a-zA-Z0-9]/g, '')           // Harf/digit dışı her şeyi sil
+        .toLowerCase()
+        .replace(/[4@]/g, 'a')
+        .replace(/1/g, 'i')
+        .replace(/0/g, 'o')
+        .replace(/3/g, 'e')
+        .replace(/7/g, 't')
+        .replace(/5/g, 's')
+        .replace(/6/g, 'g')
+        .replace(/8/g, 'b');
+}
+
+
+
 const profanityList = [
-    'amk', 'aq', 'orospu', 'sik', 'piç', 'yarrak', 'ananı', 'anan', 'amına', 'göt', 'mal', 'salak', 'gerizekalı', 'sikik', 'amcık', 'pezevenk', 'kahpe', 'ibne', 'döl', 'sürtük', 'oç', 'mk', 'sg', 'siktir', 'sikerim', 'amk', 'amq', 'amına koyim', 'amına koyayım', 'amk', 'amq', 'amına koyayım', 'amına koyim', 'ameka'
+    // Temel küfürler
+    'amk','aq','amq','amına','amını','anani','ananı','anan','ananıskm',
+    'orospu','orsp','orspu','oç','oc','ibne','ibn','yarrak','yarak','yarrağ','yarra',
+    'piç','piq','piçti','pic','sik','siktir','sikerim','sikti','sikim','sikiş','sikmek',
+    'göt','got','götoş','götveren','götün','götlek','götü','götüm','gotum',
+    'kahpe','kahbe','kahpeevladı','kahp','kahb','kahpeoğlu',
+    'pezevenk','pezo','pezev','peze','pezevngo','pezeveng',
+    'sürtük','surtuk','surtk','sürt','döl','dol','dölü',
+    'salak','mal','aptal','gerizekalı','geri zekalı','ezik','salakoğlu',
+    'ibne','top','eşcinsel hakaret amaçlı kullanımlar','donnan','ensesti',
+    'amcık','amcuk','amcı','amck','amçk','avrat','karı','karı gibi',
+    
+    // Uzun formlar
+    'amına koyayım','amına koyim','amına koyayım','amuna koyum','amına koyarım',
+    'amını siktim','ananı sikerim','ananı avradını','ananı satayım','ananı sikeyim',
+    'götüne gireyim','götünü sikerim','götüne sokim','sikerim böyle işin',
+    'orospu çocuğu','oç','orospunun evladı','orospu evladı','pezevengin çocuğu',
+
+    // Kısaltmalar
+    'mk','sg','siktirgit','aq','amk','amq','amınak','amnak','götmk',
+    'sic','skm','skrm','skrmk','amnskm','amnsk',
+
+    // Leet, maskeli yazımlar
+    '4mk','4mq','4mına','@mk','@mq','@mına','@mkn','0ç','0rqspu',
+    'y@rr@k','yarr@k','y4rr4k','s1k','s1kt1r','s1k3r1m','s1km3k',
+    'g0t','g0t0','g0tü','k4hp3','k4hpe','p3z3v3nk','p3zev3nk',
+    'sürtük','sürtùk','sürtik','surtik',
+
+    // Varyasyonlar
+    'yarrağı','yarrağım','yarrağın','yarrağına','yarak','yarah','yarag',
+    'sikeyim','sikerim','siktir','siktir git','siktir lan','siktir amk',
+    'amına koyduklarım','amına koduğum','amına kodum','amına koduk',
+    'annesiz','babasız','puşt','puştdom','oç','oçn','ocn','oçcu',
+
+    // Yaklaşık küfür kabul edilen argo
+    'kaltak','it','it oğlu it','köpek','şerefsiz','şrfsz','şerefsizim',
+    'karaktersiz','onursuz','namussuz','yavşak','yavsak','yavş','y4vş',
+    'sümüklü','çomar','dangalak','danglak','dangalaq','aptal herif',
+    'gerzek','geriz','gerz','enayi','salaq','salağ','mal','mall','mxl',
+
+    // Discord’da sık bypass edilenler
+    'a.m.k','a-m-k','a m k','a*q','a.q','a/q','am.k','am*k','am.k','amına k.',
+    'o.r.s.p.u','o r o s p u','o-r-o-s-p-u','y a r r a k','y4rr4k','y a r r a g',
+    's i k','s.i.k','s_i_k','s*ik','si*k', 's g',
+
+    // Tekrar eden varyasyonlar zaten bot için sorun değil
 ];
 
 // Davet log sistemi

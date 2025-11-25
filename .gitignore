@@ -92,5 +92,5 @@ notes.json.example
 *.sqlite
 *.sqlite3
 
-# Environment variables for dashboard
-DASHBOARD_PORT=3001
+
+/generated/prisma
