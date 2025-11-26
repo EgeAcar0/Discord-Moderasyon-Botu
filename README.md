@@ -30,6 +30,7 @@ DATABASE_URL=
 TOKEN=your_bot_token_here
 CLIENT_ID=your_bot_client_id
 GUILD_ID=your_test_server_id
+DASHBOARD_PORT=
 ```
 
 4. Konfigürasyon dosyasını oluşturun:
