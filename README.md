@@ -1,102 +1,262 @@
 # Discord Moderasyon Botu
 
-Discord sunucuları için kapsamlı moderasyon botu. Otomatik küfür filtreleme, kullanıcı yönetimi, rol sistemi ve loglama özellikleri sunar.
+Gelişmiş Discord moderasyon ve yönetim botu. Prisma ORM, SQLite veritabanı ve modern Discord.js kütüphanesi ile geliştirilmiş kapsamlı bir moderasyon çözümü.
 
-## Özellikler
+## ✨ Özellikler
 
-- ✅ Otomatik küfür filtreleme ve uyarı sistemi
-- ✅ 39 adet moderasyon komutu
-- ✅ Rol bazlı yetkilendirme
-- ✅ Kapsamlı loglama (olay, davet, komut logları)
-- ✅ Kayıt sistemi
-- ✅ Çoklu sunucu desteği
+### 🛡️ Moderasyon Araçları
+- **Kullanıcı Yönetimi**: Ban, kick, timeout, warn sistemleri
+- **Otomatik Filtreleme**: Küfür engelleme ve spam koruması
+- **Rol Yönetimi**: Otomatik rol verme ve yetki sistemi
+- **Loglama**: Tüm moderasyon eylemlerinin detaylı kaydı
 
-## Kurulum
+### 📊 Kayıt Sistemi
+- Kullanıcı kayıt ve doğrulama
+- İsim/yaş kontrolü
+- Kayıt geçmişi takibi
+- Otomatik rol atama
 
-1. Repoyu klonlayın:
+### 🔧 Gelişmiş Özellikler
+- **Web Dashboard**: Gerçek zamanlı yönetim paneli
+- **Multi-Guild**: Birden fazla sunucu desteği
+- **Rate Limiting**: Flood koruması
+- **Anti-Spam**: Akıllı spam tespiti
+- **Validasyon**: Güvenli input kontrolü
+
+## 🚀 Kurulum
+
+### Gereksinimler
+- **Node.js** v16.9.0 veya üzeri
+- **npm** veya **yarn**
+- **Git**
+
+### Adım 1: Projeyi Klonlayın
 ```bash
 git clone <repository-url>
 cd moderasyon
 ```
 
-2. Dependencies yükleyin:
+### Adım 2: Bağımlılıkları Yükleyin
 ```bash
 npm install
 ```
 
-3. `.env` dosyası oluşturun:
+### Adım 3: Ortam Değişkenlerini Ayarlayın
+`.env` dosyası oluşturun:
 ```env
-TOKEN=your_bot_token_here
-CLIENT_ID=your_bot_client_id
-GUILD_ID=your_test_server_id
+TOKEN=discord_bot_token
+CLIENT_ID=bot_client_id
+GUILD_ID=test_server_id
+PREFIX=!
 ```
 
-4. Konfigürasyon dosyasını oluşturun:
+### Adım 4: Veritabanını Başlatın
 ```bash
-cp ayarlar.json.example ayarlar.json
+npx prisma generate
+npx prisma db push
 ```
-`ayarlar.json` dosyasını kendi sunucu ID'lerinize göre düzenleyin.
 
-5. Botu başlatın:
+### Adım 5: Botu Başlatın
 ```bash
-node index.js
+# Geliştirme modu
+npm run dev
+
+# Sadece bot
+npm start
+
+# Dashboard ile birlikte
+npm run dashboard
 ```
 
- veya PM2 ile:
-```bash
-pm2 start ecosystem.config.js
+## 📂 Proje Yapısı
+
+```
+moderasyon/
+├── commands/              # Komut dosyaları
+│   ├── moderasyon/       # Moderasyon komutları (39 adet)
+│   │   ├── bilgi/        # Bilgi komutları
+│   │   ├── seslisustur/  # Sesli susturma
+│   │   ├── timeout/      # Zaman aşımı
+│   │   └── yazilisustur/ # Yazılı susturma
+│   └── kayıt/           # Kayıt sistem komutları
+├── utils/               # Yardımcı fonksiyonlar
+│   ├── validation.js    # Input validasyonu
+│   ├── rateLimit.js     # Rate limiting
+│   ├── database.js      # Veritabanı işlemleri
+│   ├── permissions.js   # Yetki kontrolü
+│   └── antiSpam.js      # Spam koruması
+├── prisma/              # Veritabanı şeması
+├── generated/           # Otomatik oluşturulan dosyalar
+├── web/                 # Web dashboard
+├── config/              # Konfigürasyon dosyaları
+└── logs/                # Log dosyaları
 ```
 
-## Komutlar
+## 🗄️ Veritabanı Yapısı
+
+### Tablolar
+- **Ayarlar**: Sunucu ayarları ve rol ID'leri
+- **Warn**: Kullanıcı uyarıları
+- **Kayit**: Kayıt sistemi ayarları
+- **Note**: Kullanıcı notları
+- **KayitLog**: Kayıt işlemleri logları
+- **BotLog**: Tüm bot olayları
+
+### Özellikler
+- SQLite veritabanı
+- Prisma ORM
+- İlişkisel veri yapısı
+- Otomatik indeksleme
+
+## 🎮 Komutlar
 
 ### Moderasyon Komutları
-- `/ban <kullanıcı> [sebep]` - Kullanıcıyı yasakla
-- `/kick <kullanıcı> [sebep]` - Kullanıcıyı at
-- `/warn <kullanıcı> <sebep>` - Kullanıcıyı uyar
-- `/timeout <kullanıcı> <süre> [sebep]` - Kullanıcıyı sustur
-- `/purge <miktar>` - Mesajları temizle
+| Komut | Açıklama | Kullanım |
+|-------|----------|----------|
+| `/ban` | Kullanıcıyı yasakla | `/ban <kullanıcı> [sebep]` |
+| `/kick` | Kullanıcıyı at | `/kick <kullanıcı> [sebep]` |
+| `/warn` | Kullanıcıyı uyar | `/warn <kullanıcı> <sebep>` |
+| `/timeout` | Kullanıcıyı sustur | `/timeout <kullanıcı> <süre> [sebep]` |
+| `/purge` | Mesajları temizle | `/purge <miktar>` |
+| `/lock` | Kanalı kilitle | `/lock <kanal>` |
+| `/unlock` | Kanal kilidini aç | `/unlock <kanal>` |
 
 ### Kayıt Komutları
-- `/kayıtkur <rol>` - Kayıt sistemini kur
-- `/kayıt <kullanıcı> <isim> <yaş>` - Kullanıcıyı kayıt et
+| Komut | Açıklama | Kullanım |
+|-------|----------|----------|
+| `/kayıtkur` | Kayıt sistemini kur | `/kayıtkur <giriş_rolü>` |
+| `/kayıt` | Kullanıcıyı kayıt et | `/kayıt <kullanıcı> <isim> <yaş>` |
+| `/kayıtal` | Kayıt sil | `/kayıtal <kullanıcı>` |
+| `/kayıtdüzenle` | Kayıt düzenle | `/kayıtdüzenle <kullanıcı> <yeni_isim>` |
 
 ### Bilgi Komutları
-- `/ping` - Bot ping'i
-- `/user <kullanıcı>` - Kullanıcı bilgisi
-- `/server` - Sunucu bilgisi
+| Komut | Açıklama |
+|-------|----------|
+| `/ping` | Bot ping süresi |
+| `/user` | Kullanıcı bilgileri |
+| `/server` | Sunucu bilgileri |
+| `/roles` | Rol listesi |
 
-## Konfigürasyon
+### Yönetim Komutları
+| Komut | Açıklama |
+|-------|----------|
+| `/ayarrol` | Rolleri ayarla |
+| `/ayarkanal` | Kanalları ayarla |
+| `/modpanel` | Moderasyon paneli |
+| `/history` | Kullanıcı geçmişi |
+
+## ⚙️ Konfigürasyon
 
 ### ayarlar.json Yapısı
 ```json
 {
-    "SUNUCU_ID": {
-        "yetkiliRolIds": ["ROL_ID_1", "ROL_ID_2"],
-        "susturulmusRolId": "SUSTURULMUS_ROL_ID",
-        "uyariRol1Id": "UYARI_ROL_1_ID",
-        "uyariRol2Id": "UYARI_ROL_2_ID",
-        "uyariRol3Id": "UYARI_ROL_3_ID",
-        "botKomutKanaliId": "BOT_KOMUT_KANALI_ID",
-        "olayLogKanalId": "OLAY_LOG_KANALI_ID",
-        "davetLogKanalId": "DAVET_LOG_KANALI_ID",
-        "botrolId": "BOT_ROL_ID"
-    }
+  "SUNUCU_ID": {
+    "susturulmusRolId": "susturulmus_rol_id",
+    "uyariRol1Id": "uyari_rol_1_id",
+    "uyariRol2Id": "uyari_rol_2_id", 
+    "uyariRol3Id": "uyari_rol_3_id",
+    "olayLogKanalId": "olay_log_kanal_id",
+    "davetLogKanalId": "davet_log_kanal_id",
+    "ilkRolId": "ilk_rol_id",
+    "yetkiliRol1Id": "yetkili_rol_1_id",
+    "yetkiliRol2Id": "yetkili_rol_2_id",
+    "yetkiliRol3Id": "yetkili_rol_3_id"
+  }
 }
 ```
 
-## Güvenlik Notları
+## 🔧 Geliştirme
 
-⚠️ **ÖNEMLİ**: Bot token'ınızı asla paylaşmayın! `.env` dosyasını `.gitignore`'a ekledik.
+### Teknolojiler
+- **discord.js@14.14.1** - Discord API
+- **@prisma/client@7.0.1** - Veritabanı ORM
+- **express@5.1.0** - Web sunucu
+- **socket.io@4.7.2** - Real-time iletişim
+- **sqlite3@5.1.6** - Veritabanı
 
-## Geliştirme
+### Geliştirme Komutları
+```bash
+# Veritabanı migrasyonu
+npx prisma migrate dev
 
-### Komut Ekleme
-Yeni komutlar `commands/` klasörüne eklenir. Discord.js slash komut formatını kullanın.
+# Veritabanı studio
+npx prisma studio
 
-### Loglama
-Tüm moderasyon eylemleri otomatik olarak loglanır. Log kanallarını `ayarlar.json`'dan yapılandırın.
+# Bağımlılık kontrolü
+npm audit
 
-## Katkıda Bulunma
+# Güvenlik güncellemeleri
+npm update
+```
+
+### Yeni Komut Ekleme
+1. `commands/` klasörüne yeni dosya ekleyin
+2. Discord.js slash komut formatını kullanın
+3. Validasyon ve yetki kontrollerini ekleyin
+4. Bot yeniden başlatıldığında komut otomatik yüklenir
+
+## 🌐 Web Dashboard
+
+Bot ile birlikte gelen web dashboard özellikleri:
+- Gerçek zamanlı kullanıcı listesi
+- Moderasyon logları
+- Sunucu istatistikleri
+- Komut geçmişi
+
+Dashboard'a erişmek için:
+```bash
+npm run dashboard
+# http://localhost:3000
+```
+
+## 🔒 Güvenlik
+
+### ✅ Güvenlik Özellikleri
+- Input validasyonu ve sanitizasyon
+- Rate limiting koruması
+- Anti-spam filtreleri
+- SQL injection koruması (Prisma ORM)
+- XSS koruması
+
+### ⚠️ Güvenlik Notları
+- **TOKEN'ınızı asla paylaşmayın!**
+- `.env` dosyasını `.gitignore`'a ekleyin
+- Güçlü şifreler kullanın
+- Düzenli yedek alın
+
+## 📊 İstatistikler
+
+- **39** moderasyon komutu
+- **6** veritabanı tablosu
+- **5** yardımcı modül
+- **Web dashboard** desteği
+- **Multi-guild** desteği
+
+## 🤝 Katkıda Bulunma
+
+1. Fork'layın
+2. Feature branch oluşturun (`git checkout -b feature/yeni-ozellik`)
+3. Commit yapın (`git commit -am 'Yeni özellik eklendi'`)
+4. Push yapın (`git push origin feature/yeni-ozellik`)
+5. Pull Request oluşturun
+
+## 📄 Lisans
+
+Bu proje **MIT Lisansı** altında dağıtılmaktadır.
+
+## 🆘 Destek
+
+Sorunlarınız için:
+- GitHub Issues
+- Discord sunucusu
+- Dokümantasyon
+
+---
+
+**Bot Version**: 1.0.0  
+**Discord.js**: v14.14.1  
+**Node.js**: v16.9.0+  
+**Database**: SQLite + Prisma
 
 1. Fork yapın
 2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
