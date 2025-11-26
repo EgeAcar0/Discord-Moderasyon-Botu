@@ -26,6 +26,7 @@ npm install
 
 3. `.env` dosyası oluşturun:
 ```env
+DATABASE_URL=
 TOKEN=your_bot_token_here
 CLIENT_ID=your_bot_client_id
 GUILD_ID=your_test_server_id
