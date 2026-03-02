@@ -51,30 +51,7 @@ function checkSpam(message, config) {
     return { allowed: true };
 }
 
-// Caps lock detection
-function checkCaps(message, config) {
-    if (!antiSpamConfig.enabled || !antiSpamConfig.caps.enabled) return { allowed: true };
-    
-    const content = message.content.trim();
-    
-    // Skip short messages
-    if (content.length < antiSpamConfig.caps.minLength) return { allowed: true };
-    
-    // Count uppercase letters
-    const uppercaseCount = (content.match(/[A-Z]/g) || []).length;
-    const uppercasePercentage = (uppercaseCount / content.length) * 100;
-    
-    if (uppercasePercentage > antiSpamConfig.caps.maxCapsPercentage) {
-        return {
-            allowed: false,
-            reason: 'caps',
-            action: antiSpamConfig.caps.action,
-            message: antiSpamConfig.caps.warnMessage
-        };
-    }
-    
-    return { allowed: true };
-}
+
 
 // Mass mentions detection
 function checkMassMentions(message, config) {
@@ -104,7 +81,6 @@ async function checkAntiSpam(message, guildConfig) {
     // Run all checks
     const checks = [
         checkSpam(message, guildConfig),
-        checkCaps(message, guildConfig),
         checkMassMentions(message, guildConfig)
     ];
     

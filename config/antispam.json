@@ -7,13 +7,7 @@
     "action": "warn",
     "warnMessage": "Spam tespit edildi! Lütfen yavaşlayın."
   },
-  "caps": {
-    "enabled": true,
-    "maxCapsPercentage": 70,
-    "minLength": 10,
-    "action": "delete",
-    "warnMessage": "Fazla büyük harf kullanımı! Lütfen normal yazın."
-  },
+
   "massMentions": {
     "enabled": true,
     "maxMentions": 3,
