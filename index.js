@@ -40,9 +40,7 @@ for (const file of commandFiles) {
 const ayarlar = require('./ayarlar.json');
 const { addWarn, getWarnCount, getKayit } = require('./utils/database');
 
-const profanityList = [
-    'amk', 'aq', 'orospu', 'sik', 'piç', 'yarrak', 'ananı', 'anan', 'amına', 'göt', 'mal', 'salak', 'gerizekalı', 'sikik', 'amcık', 'pezevenk', 'kahpe', 'ibne', 'döl', 'sürtük', 'oç', 'mk', 'sg', 'siktir', 'sikerim', 'amk', 'amq', 'amına koyim', 'amına koyayım', 'amk', 'amq', 'amına koyayım', 'amına koyim', 'ameka'
-];
+
 
 // Davet log sistemi
 const invitesCache = new Map();
@@ -215,40 +213,6 @@ client.on("messageCreate", async message => {
             }
         }
         return;
-    }
-    
-    const lower = message.content.toLowerCase();
-    if (profanityList.some(word => lower.includes(word))) {
-        await message.delete().catch(() => {});
-        
-        // Kanala uyarı mesajı
-        
-        
-        // Warn escalation with database
-        const userId = message.author.id;
-        const warnCount = await getWarnCount(guildId, userId);
-        
-        // Add warn to database
-        
-        
-        // Uyarı rolleri sistemi
-        const newWarnCount = await getWarnCount(guildId, userId);
-        const member = await message.guild.members.fetch(userId).catch(() => null);
-        
-        if (member) {
-            // Önceki tüm uyarı rollerini kaldır
-            const warnRoles = [config.uyariRol1Id, config.uyariRol2Id, config.uyariRol3Id];
-            for (const roleId of warnRoles) {
-                if (roleId && member.roles.cache.has(roleId)) {
-                    await member.roles.remove(roleId).catch(() => {});
-                }
-            }
-            
-            // Yeni uyarı seviyesine göre rol ver
-            
-        }
-        // Log to event log channel
-        
     }
 });
 
