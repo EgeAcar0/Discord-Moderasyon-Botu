@@ -51,38 +51,6 @@ function checkSpam(message, config) {
     return { allowed: true };
 }
 
-// Link detection
-function checkLinks(message, config) {
-    if (!antiSpamConfig.enabled || !antiSpamConfig.links.enabled) return { allowed: true };
-    
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const urls = message.content.match(urlRegex);
-    
-    if (!urls) return { allowed: true };
-    
-    // Check if any URL is not in allowed domains
-    for (const url of urls) {
-        let domain = url.replace(/^https?:\/\//, '').split('/')[0];
-        domain = domain.toLowerCase();
-        
-        const isAllowed = antiSpamConfig.links.allowedDomains.some(allowedDomain => 
-            domain.includes(allowedDomain.toLowerCase())
-        );
-        
-        if (!isAllowed) {
-            return {
-                allowed: false,
-                reason: 'link',
-                action: antiSpamConfig.links.action,
-                message: antiSpamConfig.links.warnMessage,
-                url: url
-            };
-        }
-    }
-    
-    return { allowed: true };
-}
-
 // Caps lock detection
 function checkCaps(message, config) {
     if (!antiSpamConfig.enabled || !antiSpamConfig.caps.enabled) return { allowed: true };
@@ -136,7 +104,6 @@ async function checkAntiSpam(message, guildConfig) {
     // Run all checks
     const checks = [
         checkSpam(message, guildConfig),
-        checkLinks(message, guildConfig),
         checkCaps(message, guildConfig),
         checkMassMentions(message, guildConfig)
     ];

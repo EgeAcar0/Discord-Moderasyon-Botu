@@ -7,12 +7,6 @@
     "action": "warn",
     "warnMessage": "Spam tespit edildi! Lütfen yavaşlayın."
   },
-  "links": {
-    "enabled": true,
-    "allowedDomains": ["discord.com", "discord.gg", "youtube.com", "youtu.be", "twitch.tv"],
-    "action": "delete",
-    "warnMessage": "Link paylaşımı yasaktır! Link silindi."
-  },
   "caps": {
     "enabled": true,
     "maxCapsPercentage": 70,
