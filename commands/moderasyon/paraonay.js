@@ -1,6 +1,7 @@
-const { SlashCommandBuilder, Options } = require('discord.js');
+const { SlashCommandBuilder, Options, EmbedBuilder } = require('discord.js');
 const { isAuthorized } = require(process.cwd() + '/utils/permissions');
 const ayarlar = require(process.cwd() + '/ayarlar.json');
+
 
 module.exports = {
     data: new SlashCommandBuilder()
