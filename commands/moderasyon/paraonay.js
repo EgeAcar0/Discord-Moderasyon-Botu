@@ -7,13 +7,13 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('paraonay')
         .setDescription('Para alındığını onayla.')
-        .addStringOption(option =>
+        .addUserOption(option =>
             option.setName('kullanıcı')
             .setDescription('Para Alınan Kullanıcı')
             .setRequired(true))
     
     
-        .addStringOption(option =>
+        .addUserOption(option =>
             option.setName('alan')
             .setDescription('Parayı alan yetkili')
             .setRequired(true))
@@ -27,8 +27,8 @@ module.exports = {
         if (!isAuthorized(interaction.member)){
             return interaction.reply({ content: '❌ Yetkin Yok.', flags: [MessageFlags.Ephemeral] });
         }
-        const kullanici = interaction.options.getString('kullanıcı');
-        const alan = interaction.options.getString('alan');
+        const kullanici = interaction.options.getUser('kullanıcı');
+        const alan = interaction.options.getUser('alan');
         const kanal = interaction.options.getChannel('kanal') || interaction.guild.channels.cache.get(ayarlar[interaction.guild.id].paraOnayKanalId);
         if(!kanal) return interaction.reply({ content: '❌ Para onay kanalı ayarlanmamış.', flags: [MessageFlags.Ephemeral] });
         let embed = new EmbedBuilder()
