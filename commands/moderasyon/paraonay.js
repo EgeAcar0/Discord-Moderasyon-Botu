@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, Options, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, Options, EmbedBuilder, MessageFlags } = require('discord.js');
 const { isAuthorized } = require(process.cwd() + '/utils/permissions');
 const ayarlar = require(process.cwd() + '/ayarlar.json');
 
@@ -25,12 +25,12 @@ module.exports = {
             .setRequired(false)),
     async execute(interaction){
         if (!isAuthorized(interaction.member)){
-            return interaction.reply({ content: '❌ Yetkin Yok.', ephemeral: true });
+            return interaction.reply({ content: '❌ Yetkin Yok.', flags: [MessageFlags.Ephemeral] });
         }
         const kullanici = interaction.options.getString('kullanıcı');
         const alan = interaction.options.getString('alan');
         const kanal = interaction.options.getChannel('kanal') || interaction.guild.channels.cache.get(ayarlar[interaction.guild.id].paraOnayKanalId);
-        if(!kanal) return interaction.reply({ content: '❌ Para onay kanalı ayarlanmamış.', ephemeral: true });
+        if(!kanal) return interaction.reply({ content: '❌ Para onay kanalı ayarlanmamış.', flags: [MessageFlags.Ephemeral] });
         let embed = new EmbedBuilder()
             .setTitle('Para Onay')
             .setDescription(`Para onaylandı.
@@ -39,7 +39,7 @@ module.exports = {
             .setColor('Green')
             .setTimestamp();
         await kanal.send({ embeds: [embed] });
-        await interaction.reply({ content: '✅ Para onaylandı.', ephemeral: true });
+        await interaction.reply({ content: '✅ Para onaylandı.', flags: [MessageFlags.Ephemeral] });
 
     
     }
