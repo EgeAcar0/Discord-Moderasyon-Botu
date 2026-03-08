@@ -30,6 +30,10 @@ module.exports = {
             option.setName('davetlogkanali')
                 .setDescription('Davet log kanalı')
                 .setRequired(false))
+        .addChannelOption(option =>
+            option.setName('paraonaykanali')
+                .setDescription('Para onay kanalı')
+                .setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
     async execute(interaction) {
@@ -42,6 +46,7 @@ module.exports = {
         const oyunKanali3 = interaction.options.getChannel('oyunkanali3');
         const olayLogKanali = interaction.options.getChannel('olaylogkanali');
         const davetLogKanali = interaction.options.getChannel('davetlogkanali');
+        const paraOnayKanali = interaction.options.getChannel('paraonaykanali');
 
         if(botKanali) ayarlar[guildId].botKomutKanaliId = botKanali.id;
 
@@ -52,6 +57,7 @@ module.exports = {
 
         if(olayLogKanali) ayarlar[guildId].olayLogKanalId = olayLogKanali.id;
         if(davetLogKanali) ayarlar[guildId].davetLogKanalId = davetLogKanali.id;
+        if(paraOnayKanali) ayarlar[guildId].paraOnayKanalId = paraOnayKanali.id;
 
         fs.writeFileSync('./ayarlar.json', JSON.stringify(ayarlar, null, 4));
 
